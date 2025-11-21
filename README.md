@@ -28,11 +28,12 @@ The Dynamic Outline Book Machine is a workflow system that leverages Claude Code
 
 ✅ **4-Act Structure** - Plans 6-7 chapters per act
 ✅ **Progressive Generation** - Only outlines what's needed next
+✅ **Automatic Editing Workflow** - Every chapter goes through developmental editing and structural improvement
 ✅ **Automatic Adjustment Checks** - Updates outline after each chapter if needed
 ✅ **Spoiler-Protected Briefing** - Writer AI never sees future plot points
 ✅ **Context Optimized** - Orchestrator uses minimal context, subagents read full docs
 ✅ **Extended Thinking** - All stages use thinking for quality
-✅ **User Control** - Review/approve at every major step
+✅ **User Control** - Review/approve final chapters (editing loop is automatic)
 
 ---
 
@@ -62,11 +63,15 @@ The agent handles all orchestration, subagent spawning, and state management for
    ↓
 2. User Reviews & Approves
    ↓
-3. FOR EACH CHAPTER:
-   ├─ Generate Briefing Packet (spoiler-free)
-   ├─ Write Chapter
+3. FOR EACH CHAPTER (Automatic Editing Workflow):
+   ├─ Generate Briefing Packet (spoiler-free) - for FIRST DRAFT
+   ├─ Write First Draft Chapter
+   ├─ Evaluate Chapter (developmental editing)
+   ├─ Rewrite Chapter Plan (based on evaluation)
+   ├─ Generate New Briefing Packet (for improved plan)
+   ├─ Write Final Chapter
    ├─ Generate Summary
-   ├─ User Reviews Chapter
+   ├─ User Reviews Final Chapter
    ├─ Check if Outline Needs Adjustments
    └─ User Reviews Adjustments (if any)
    ↓
@@ -107,7 +112,7 @@ You ←→ Claude Code (Orchestrator)
 ├── .book_machine/                    ← System files
 │   ├── state.json                    ← Workflow state
 │   ├── config.json                   ← Configuration
-│   └── prompts/                      ← Subagent prompts (5 files)
+│   └── prompts/                      ← Subagent prompts (7 files)
 │
 └── project/                          ← YOUR BOOK CONTENT
     ├── master_outline.md            ← High-level story guidance
@@ -115,10 +120,12 @@ You ←→ Claude Code (Orchestrator)
     ├── writing_style.md             ← Prose style guide
     ├── character_voice.md           ← POV voice profiles
     │
-    ├── outlines/                    ← Generated (system creates)
-    ├── chapters/                    ← Generated (system creates)
-    ├── summaries/                   ← Generated (system creates)
-    └── briefings/                   ← Generated (system creates)
+    ├── outlines/                    ← Generated: Act outlines
+    ├── chapters/                    ← Generated: Final chapters
+    ├── summaries/                   ← Generated: Chapter summaries
+    ├── briefings/                   ← Generated: Chapter briefing packets
+    ├── evaluations/                 ← Generated: Chapter evaluations
+    └── chapter_plans/               ← Generated: Improved chapter plans
 ```
 
 ### Step 2: Create Your Project Files
@@ -210,17 +217,22 @@ Say to Claude Code:
 "Write next chapter"
 ```
 
-Claude Code will:
-1. Generate briefing packet (spoiler-free context)
-2. Write the chapter (1500-2500 words)
-3. Generate chapter summary
-4. Present chapter to you for review
+Claude Code will **automatically** run the complete editing workflow:
+1. Generate briefing packet (spoiler-free context) for first draft
+2. Write first draft chapter (1500-2500 words)
+3. Evaluate first draft (developmental editing analysis)
+4. Rewrite chapter plan (addressing structural issues)
+5. Generate new briefing packet (for improved plan)
+6. Write final chapter (with enhanced structure)
+7. Generate chapter summary
+8. Present **final** chapter to you for review
 
-**Review the chapter and:**
+**The editing loop is fully automatic** - you only review the final, improved chapter.
+
+**Review the final chapter and:**
 - Option A: Approve as-is (proceed to adjustment check)
 - Option B: Request specific edits (Claude Code will revise)
-- Option C: Regenerate completely (new attempt)
-- Option D: Provide manual edit (you edit, Claude Code saves it)
+- Option C: Regenerate completely (new attempt through entire editing workflow)
 
 ### Automatic Outline Adjustment
 
@@ -294,7 +306,7 @@ Claude Code will show:
 - Opening setup and ending hook
 - Chapter summary (from POV character's limited perspective)
 
-### Stage 2: Chapter Briefing Generation
+### Stage 2: Chapter Briefing Generation (First Draft)
 **What happens:** System extracts ONLY information relevant to current chapter from dossier, excluding future spoilers
 
 **Token usage:** 55k-110k
@@ -309,15 +321,59 @@ Claude Code will show:
 
 **Critical:** This is spoiler protection. Writer AI only sees what POV character would know.
 
-### Stage 3: Chapter Writing
-**What happens:** System writes chapter using briefing packet + summaries + last 9 chapters
+### Stage 3: Chapter Writing (First Draft)
+**What happens:** System writes first draft chapter using briefing packet + summaries + last 9 chapters
 
 **Token usage:** 41k-53k
 
-**Output:** 1500-2500 word chapter in your style, from POV character's limited perspective
+**Output:** 1500-2500 word first draft chapter in your style, from POV character's limited perspective
 
-### Stage 4: Chapter Summary
-**What happens:** System summarizes chapter for future context
+### Stage 4: Chapter Evaluation (NEW - Automatic)
+**What happens:** Developmental editor analyzes chapter's storytelling architecture and reader experience
+
+**Token usage:** 30k-60k
+
+**Output:** Comprehensive structural analysis covering:
+- Chapter architecture and purpose
+- Reader experience mapping
+- Character agency and emotional arc
+- Pacing and tension patterns
+- Scene effectiveness
+- Stakes and conflict architecture
+- Core structural problems
+- Key craft principles for revision
+
+**Focus:** Big-picture structure, pacing, character agency - NOT line-level prose
+
+### Stage 5: Chapter Plan Rewriting (NEW - Automatic)
+**What happens:** System creates brand new chapter plan that addresses structural issues from evaluation
+
+**Token usage:** 40k-80k
+
+**Output:** Improved chapter plan that:
+- Preserves core chapter purpose and ending state
+- Reimagines structure from scratch to fix identified problems
+- Applies craft principles from evaluation
+- Maintains story continuity
+
+**Critical:** Chapter plan is self-sufficient to write improved chapter without referencing first draft
+
+### Stage 6: Chapter Briefing Generation (Final)
+**What happens:** System generates new briefing packet based on improved chapter plan
+
+**Token usage:** 55k-110k
+
+**Output:** Updated briefing packet reflecting structural improvements
+
+### Stage 7: Chapter Writing (Final)
+**What happens:** System writes final chapter using improved plan and briefing packet
+
+**Token usage:** 41k-53k
+
+**Output:** 1500-2500 word final chapter with enhanced structure, pacing, and character agency
+
+### Stage 8: Chapter Summary
+**What happens:** System summarizes final chapter for future context
 
 **Token usage:** 2k-3k
 
@@ -328,7 +384,7 @@ Claude Code will show:
 - Relationship developments
 - Unresolved threads
 
-### Stage 5: Outline Adjustment Check
+### Stage 9: Outline Adjustment Check
 **What happens:** System compares written chapter to plan, determines if remaining chapters need changes
 
 **Token usage:** 36k-103k

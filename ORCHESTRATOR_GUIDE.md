@@ -25,7 +25,13 @@ You are Claude Code acting as the **orchestrator** for the Dynamic Outline Book 
 - **Config file:** `.book_machine/config.json`
 - **Prompt templates:** `.book_machine/prompts/`
 - **Project files:** `project/` (master_outline.md, story_dossier.md, etc.)
-- **Generated content:** `project/outlines/`, `project/chapters/`, `project/summaries/`
+- **Generated content:**
+  - `project/outlines/` - Act outlines
+  - `project/chapters/` - Final chapters
+  - `project/summaries/` - Chapter summaries
+  - `project/briefings/` - Chapter briefing packets (draft and final)
+  - `project/evaluations/` - Developmental editor evaluations
+  - `project/chapter_plans/` - Improved chapter plans from evaluation
 
 ---
 
@@ -64,13 +70,21 @@ READY_FOR_ACT_GENERATION
 REVIEWING_ACT_OUTLINE
     ↓ (user approves/adjusts)
 READY_FOR_CHAPTER
-    ↓ (spawn briefing + writer + summary subagents)
+    ↓ (spawn briefing + writer subagents for FIRST DRAFT)
+EVALUATING_CHAPTER
+    ↓ (spawn evaluation subagent - automatic)
+REWRITING_CHAPTER_PLAN
+    ↓ (spawn chapter plan rewriting subagent - automatic)
+WRITING_FINAL_CHAPTER
+    ↓ (spawn briefing + writer subagents for FINAL VERSION - automatic)
+GENERATING_SUMMARY
+    ↓ (spawn summary subagent - automatic)
 REVIEWING_CHAPTER
-    ↓ (user approves/edits/regenerates)
+    ↓ (user reviews final chapter)
 CHECKING_ADJUSTMENTS
     ↓ (spawn adjustment check subagent)
 REVIEWING_ADJUSTMENTS
-    ↓ (user approves adjustments)
+    ↓ (user approves adjustments if needed)
 READY_FOR_NEXT_CHAPTER
     ↓ (loop or move to next act)
 ACT_COMPLETE
@@ -105,6 +119,8 @@ The system uses **specialized agents** for different workflow stages to ensure q
     "act_outline_generation": "story-architect",
     "chapter_briefing_generation": "general-purpose",
     "chapter_writing": "fantasy-romance-editor",
+    "chapter_evaluation": "story-architect",
+    "chapter_plan_rewriting": "story-architect",
     "chapter_summary": "general-purpose",
     "outline_adjustment_check": "story-architect"
   }
@@ -117,7 +133,8 @@ The system uses **specialized agents** for different workflow stages to ensure q
 - ✅ Understands story architecture and plot design
 - ✅ Knows narrative structure and pacing
 - ✅ Makes editorial judgments about story continuity
-- ✅ Used for: Act outline generation, adjustment checks
+- ✅ Expert in developmental editing and reader experience
+- ✅ Used for: Act outline generation, chapter evaluation, chapter plan rewriting, adjustment checks
 
 **fantasy-romance-editor** (for creative writing):
 - ✅ Expert in creative prose and genre conventions
@@ -228,13 +245,25 @@ The system uses **specialized agents** for different workflow stages to ensure q
 
 ---
 
-### STEP 4: Generate Chapter (Briefing → Write → Summarize)
+### STEP 4: Generate Chapter (Complete Editing Workflow)
 
 **User says:** "Write next chapter" or "Continue"
 
+**Overview:** The chapter workflow now includes an automatic editing loop:
+1. Generate briefing packet for first draft
+2. Write first draft
+3. Evaluate first draft (developmental editing)
+4. Rewrite chapter plan based on evaluation
+5. Generate new briefing packet for improved plan
+6. Write final chapter
+7. Generate summary
+8. Present to user
+
+All steps are **fully automatic** - no user approval needed until final chapter is ready.
+
 **You do:**
 
-#### 4A: Generate Briefing Packet
+#### 4A: Generate Initial Briefing Packet
 
 1. Read `state.json` to get current chapter number
 2. Read `config.json` for file paths and agent configuration
@@ -257,15 +286,15 @@ The system uses **specialized agents** for different workflow stages to ensure q
    - `{{LAST_9_CHAPTERS}}`
 7. Spawn Task subagent with `subagent_type="general-purpose"` and filled prompt
 8. Receive briefing packet
-9. Save to `project/briefings/chapter_X_briefing.md`
-10. **Do NOT show to user** (config says auto-proceed)
+9. Save to `project/briefings/chapter_X_briefing_draft.md`
+10. Update `state.json`: Set `workflow_stage` to "writing_first_draft"
 
-#### 4B: Write Chapter
+#### 4B: Write First Draft
 
 1. Check which agent to use: `agent_configuration["chapter_writing"]["agent"]` → **"fantasy-romance-editor"**
 2. Load prompt: `.book_machine/prompts/3_chapter_writing.md`
 3. Read inputs:
-   - Generated briefing packet
+   - Generated briefing packet (draft version)
    - All summaries
    - Last 9 chapters
 4. Replace placeholders:
@@ -275,16 +304,90 @@ The system uses **specialized agents** for different workflow stages to ensure q
    - `{{LAST_9_CHAPTERS}}`
    - `{{POV_CHARACTER}}` (from act outline chapter block)
    - `{{MIN_WORDS}}`, `{{MAX_WORDS}}` (from config)
-5. Spawn Task subagent with `subagent_type="fantasy-romance-editor"` and filled prompt (this may take longer)
-6. Receive chapter text
-7. Save to `project/chapters/chapter_X.md`
+5. Spawn Task subagent with `subagent_type="fantasy-romance-editor"` and filled prompt
+6. Receive chapter text (first draft)
+7. Save to `project/chapters/chapter_X_draft.md`
+8. Update `state.json`: Set `workflow_stage` to "evaluating_chapter"
 
-#### 4C: Generate Summary
+#### 4C: Evaluate First Draft
+
+1. Check which agent to use: `agent_configuration["chapter_evaluation"]["agent"]` → **"story-architect"**
+2. Load prompt: `.book_machine/prompts/4_chapter_evaluation.md`
+3. Read inputs:
+   - First draft chapter: `project/chapters/chapter_X_draft.md`
+   - `project/story_dossier.md`
+   - `project/master_outline.md`
+   - All summaries: `project/summaries/*.md`
+4. Replace placeholders:
+   - `{{CHAPTER_NUMBER}}`
+   - `{{CHAPTER_TEXT}}` (first draft)
+   - `{{STORY_DOSSIER}}`
+   - `{{MASTER_OUTLINE}}`
+   - `{{ALL_SUMMARIES}}`
+5. Spawn Task subagent with `subagent_type="story-architect"` and filled prompt
+6. Receive evaluation (structural analysis)
+7. Save to `project/evaluations/chapter_X_evaluation.md`
+8. Update `state.json`: Set `workflow_stage` to "rewriting_chapter_plan"
+
+#### 4D: Rewrite Chapter Plan
+
+1. Check which agent to use: `agent_configuration["chapter_plan_rewriting"]["agent"]` → **"story-architect"**
+2. Load prompt: `.book_machine/prompts/5_chapter_plan_rewriting.md`
+3. Read inputs:
+   - First draft chapter: `project/chapters/chapter_X_draft.md`
+   - Evaluation: `project/evaluations/chapter_X_evaluation.md`
+   - `project/story_dossier.md`
+   - `project/master_outline.md`
+   - All summaries: `project/summaries/*.md`
+   - Last 9 chapters: `project/chapters/chapter_*.md`
+4. Replace placeholders:
+   - `{{CHAPTER_NUMBER}}`
+   - `{{CHAPTER_TEXT}}` (first draft)
+   - `{{CHAPTER_EVALUATION}}`
+   - `{{STORY_DOSSIER}}`
+   - `{{MASTER_OUTLINE}}`
+   - `{{ALL_SUMMARIES}}`
+   - `{{LAST_9_CHAPTERS}}`
+5. Spawn Task subagent with `subagent_type="story-architect"` and filled prompt
+6. Receive improved chapter plan
+7. Save to `project/chapter_plans/chapter_X_improved_plan.md`
+8. Update `state.json`: Set `workflow_stage` to "writing_final_chapter"
+
+#### 4E: Generate Final Briefing Packet
+
+1. Load prompt: `.book_machine/prompts/2_chapter_briefing_generation.md`
+2. Read inputs:
+   - **IMPORTANT:** Use the improved chapter plan instead of act outline chapter block
+   - Read improved plan: `project/chapter_plans/chapter_X_improved_plan.md`
+   - `project/story_dossier.md`
+   - `project/writing_style.md`
+   - `project/character_voice.md`
+   - All summaries: `project/summaries/*.md`
+   - Last 9 chapters: `project/chapters/chapter_*.md`
+3. Replace placeholders (using improved plan as chapter guidance)
+4. Spawn Task subagent with `subagent_type="general-purpose"` and filled prompt
+5. Receive final briefing packet
+6. Save to `project/briefings/chapter_X_briefing_final.md`
+
+#### 4F: Write Final Chapter
+
+1. Load prompt: `.book_machine/prompts/3_chapter_writing.md`
+2. Read inputs:
+   - Final briefing packet
+   - All summaries
+   - Last 9 chapters
+3. Replace placeholders (same as 4B but with final briefing)
+4. Spawn Task subagent with `subagent_type="fantasy-romance-editor"` and filled prompt
+5. Receive final chapter text
+6. Save to `project/chapters/chapter_X.md` (this is the official version)
+7. Update `state.json`: Set `workflow_stage` to "generating_summary"
+
+#### 4G: Generate Summary
 
 1. Check which agent to use: `agent_configuration["chapter_summary"]["agent"]` → **"general-purpose"**
-2. Load prompt: `.book_machine/prompts/4_chapter_summary.md`
+2. Load prompt: `.book_machine/prompts/6_chapter_summary.md`
 3. Read inputs:
-   - Just-written chapter text
+   - Final chapter text: `project/chapters/chapter_X.md`
 4. Replace placeholders:
    - `{{CHAPTER_NUMBER}}`
    - `{{CHAPTER_TEXT}}`
@@ -293,13 +396,14 @@ The system uses **specialized agents** for different workflow stages to ensure q
 6. Receive summary
 7. Save to `project/summaries/chapter_X.md`
 
-#### 4D: Present to User
+#### 4H: Present to User
 
 1. Update `state.json`:
    - Set `workflow_stage` to "reviewing_chapter"
    - Update chapter status to "complete" (tentatively)
-2. Show user the chapter
-3. Ask: "Review Chapter X. Options: (A) Approve, (B) Request edits, (C) Regenerate, (D) Provide manual edit"
+2. Show user the **final** chapter (not the draft)
+3. Optionally mention: "Chapter went through evaluation and improvement cycle"
+4. Ask: "Review Chapter X. Options: (A) Approve, (B) Request edits, (C) Regenerate"
 
 ---
 
@@ -334,7 +438,7 @@ The system uses **specialized agents** for different workflow stages to ensure q
 1. Read `state.json` to get current act and chapter
 2. Read `config.json` to check agent configuration
 3. Check which agent to use: `agent_configuration["outline_adjustment_check"]["agent"]` → **"story-architect"**
-4. Load prompt: `.book_machine/prompts/5_outline_adjustment_check.md`
+4. Load prompt: `.book_machine/prompts/7_outline_adjustment_check.md`
 5. Read inputs:
    - Just-approved chapter: `project/chapters/chapter_X.md`
    - Chapter summary: `project/summaries/chapter_X.md`
@@ -475,6 +579,7 @@ When filling prompts, replace these placeholders:
 - `{{CHAPTER_TEXT}}` - Full chapter content
 - `{{CHAPTER_SUMMARY}}` - Chapter summary
 - `{{CHAPTER_BRIEFING}}` - Generated briefing packet
+- `{{CHAPTER_EVALUATION}}` - Developmental editor evaluation of chapter
 - `{{POV_CHARACTER}}` - From chapter block in outline
 - `{{MIN_WORDS}}`, `{{MAX_WORDS}}` - From config
 - `{{REMAINING_CHAPTERS_OUTLINE}}` - Unwritten chapters from act outline
