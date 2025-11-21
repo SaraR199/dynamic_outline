@@ -36,6 +36,23 @@ The Dynamic Outline Book Machine is a workflow system that leverages Claude Code
 
 ---
 
+## Using the Dedicated Agent (Recommended)
+
+This system includes a specialized Claude Code agent (`book-machine-orchestrator`) that knows the workflow automatically.
+
+**Quick Start with Agent:**
+```bash
+claude-code --agent book-machine-orchestrator
+```
+
+Then just say: `"Initialize new book project"`
+
+The agent handles all orchestration, subagent spawning, and state management for you.
+
+**📖 See [AGENT_SETUP.md](AGENT_SETUP.md) for installation and usage details.**
+
+---
+
 ## How It Works
 
 ### The Workflow Loop
@@ -505,6 +522,7 @@ This is an evolving system. Suggestions for improvement:
 
 ## Quick Start Checklist
 
+- [ ] **OPTIONAL:** Set up the dedicated agent (see [AGENT_SETUP.md](AGENT_SETUP.md))
 - [ ] Read this README fully
 - [ ] Review ORCHESTRATOR_GUIDE.md to understand system
 - [ ] Look at .EXAMPLE files for structure guidance
