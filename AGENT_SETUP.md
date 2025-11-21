@@ -108,6 +108,80 @@ The agent has:
 
 ---
 
+## Specialized Subagents
+
+The Book Machine uses **multiple specialized agents** for different workflow stages to ensure quality:
+
+### Agent Ecosystem
+
+```
+book-machine-orchestrator (YOU interact with this)
+    │
+    ├─→ story-architect (for structure)
+    │   ├─ Act outline generation
+    │   └─ Outline adjustment checks
+    │
+    ├─→ fantasy-romance-editor (for prose)
+    │   └─ Chapter writing
+    │
+    └─→ general-purpose (for mechanical tasks)
+        ├─ Briefing packet generation
+        └─ Chapter summaries
+```
+
+### Why Multiple Agents?
+
+**story-architect** (`story-architect.agent.md`):
+- ✅ Expert in narrative structure and plot design
+- ✅ Understands story beats, pacing, and act architecture
+- ✅ Makes editorial judgments about story continuity
+- 📘 **Model:** Sonnet | **Color:** Blue
+- **Used for:** Creating act outlines, checking if adjustments needed
+
+**fantasy-romance-editor** (your existing agent):
+- ✅ Expert in creative prose and genre conventions
+- ✅ Writes romantic tension and character chemistry
+- ✅ Integrates fantasy worldbuilding naturally
+- 💕 **Model:** Sonnet | **Color:** Pink
+- **Used for:** Writing actual chapter prose
+
+**general-purpose** (Claude Code default):
+- ✅ Efficient at extraction and filtering
+- ✅ Good for mechanical, non-creative tasks
+- **Used for:** Briefing generation (extraction), summaries (distillation)
+
+### Configuration
+
+Agent assignments are configured in `.book_machine/config.json`:
+
+```json
+{
+  "agent_configuration": {
+    "act_outline_generation": "story-architect",
+    "chapter_briefing_generation": "general-purpose",
+    "chapter_writing": "fantasy-romance-editor",
+    "chapter_summary": "general-purpose",
+    "outline_adjustment_check": "story-architect"
+  }
+}
+```
+
+**You can customize this!** Change which agent is used for each stage by editing the config.
+
+### Installing Additional Agents
+
+The system requires:
+1. ✅ `book-machine-orchestrator.agent.md` (included)
+2. ✅ `story-architect.agent.md` (included)
+3. ⚠️ `fantasy-romance-editor` (you need to provide this or use a generic creative writing agent)
+
+If you don't have fantasy-romance-editor:
+- Use your own creative writing agent
+- Or change config to use "general-purpose" (less optimal for prose)
+- Or create a custom creative-writer agent
+
+---
+
 ## Usage
 
 ### Starting a Session with the Agent

@@ -34,5 +34,27 @@
     "chapter_writing": ".book_machine/prompts/3_chapter_writing.md",
     "chapter_summary": ".book_machine/prompts/4_chapter_summary.md",
     "outline_adjustment_check": ".book_machine/prompts/5_outline_adjustment_check.md"
+  },
+  "agent_configuration": {
+    "act_outline_generation": {
+      "agent": "story-architect",
+      "reason": "Requires story structure expertise, plot architecture, and narrative design"
+    },
+    "chapter_briefing_generation": {
+      "agent": "general-purpose",
+      "reason": "Mechanical extraction and filtering task, no creative judgment needed"
+    },
+    "chapter_writing": {
+      "agent": "fantasy-romance-editor",
+      "reason": "Creative prose writing requiring genre expertise and romantic arc understanding"
+    },
+    "chapter_summary": {
+      "agent": "general-purpose",
+      "reason": "Factual distillation task, no creative or editorial judgment needed"
+    },
+    "outline_adjustment_check": {
+      "agent": "story-architect",
+      "reason": "Requires structural analysis and editorial judgment about story continuity"
+    }
   }
 }

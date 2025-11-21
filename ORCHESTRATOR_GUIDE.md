@@ -85,26 +85,72 @@ BOOK_COMPLETE
 Use the **Task tool** with appropriate prompts. Each subagent needs:
 
 1. **Load the prompt template** from `.book_machine/prompts/`
-2. **Read necessary input files** based on the task
-3. **Replace placeholders** in prompt with actual content
-4. **Spawn the subagent** with the complete prompt
-5. **Wait for result** and present to user
+2. **Check agent configuration** in `config.json` to determine which agent to use
+3. **Read necessary input files** based on the task
+4. **Replace placeholders** in prompt with actual content
+5. **Spawn the subagent** with the complete prompt and specified agent type
+6. **Wait for result** and present to user
+
+---
+
+## Agent Configuration
+
+The system uses **specialized agents** for different workflow stages to ensure quality:
+
+### Agent Assignments (from config.json)
+
+```json
+{
+  "agent_configuration": {
+    "act_outline_generation": "story-architect",
+    "chapter_briefing_generation": "general-purpose",
+    "chapter_writing": "fantasy-romance-editor",
+    "chapter_summary": "general-purpose",
+    "outline_adjustment_check": "story-architect"
+  }
+}
+```
+
+### Why Different Agents?
+
+**story-architect** (for structural tasks):
+- ✅ Understands story architecture and plot design
+- ✅ Knows narrative structure and pacing
+- ✅ Makes editorial judgments about story continuity
+- ✅ Used for: Act outline generation, adjustment checks
+
+**fantasy-romance-editor** (for creative writing):
+- ✅ Expert in creative prose and genre conventions
+- ✅ Understands romantic arc development
+- ✅ Writes with fantasy worldbuilding integration
+- ✅ Used for: Chapter writing (the actual prose)
+
+**general-purpose** (for mechanical tasks):
+- ✅ Efficient at extraction and filtering
+- ✅ Good for factual/mechanical work
+- ✅ No creative bias needed
+- ✅ Used for: Briefing generation, summary creation
+
+**Important:** When spawning subagents, ALWAYS check `config.json` to determine which agent to use for each stage.
+
+---
 
 ### Example: Spawning Act Outline Generator
 
 ```python
 # Pseudo-code for clarity
 1. Read .book_machine/prompts/1_act_outline_generation.md
-2. Read config.json to get file paths
-3. Read project/master_outline.md
-4. Read project/story_dossier.md
-5. Read all summaries from project/summaries/
-6. Replace {{PLACEHOLDERS}} in prompt with actual content
-7. Use Task tool with subagent_type="general-purpose"
-8. Pass the filled prompt to the subagent
-9. Receive generated act outline
-10. Save to project/outlines/act_N_outline.md
-11. Present to user for review
+2. Read config.json to get file paths AND agent configuration
+3. Check agent_configuration["act_outline_generation"]["agent"] → "story-architect"
+4. Read project/master_outline.md
+5. Read project/story_dossier.md
+6. Read all summaries from project/summaries/
+7. Replace {{PLACEHOLDERS}} in prompt with actual content
+8. Use Task tool with subagent_type="story-architect" (from config)
+9. Pass the filled prompt to the story-architect subagent
+10. Receive generated act outline
+11. Save to project/outlines/act_N_outline.md
+12. Present to user for review
 ```
 
 ---
@@ -136,13 +182,14 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
 
 **You do:**
 1. Read `state.json` to confirm current act number
-2. Read `config.json` to get file paths and chapters_per_act
-3. Load prompt template: `.book_machine/prompts/1_act_outline_generation.md`
-4. Read required inputs:
+2. Read `config.json` to get file paths, chapters_per_act, and agent configuration
+3. Check which agent to use: `agent_configuration["act_outline_generation"]["agent"]` → **"story-architect"**
+4. Load prompt template: `.book_machine/prompts/1_act_outline_generation.md`
+5. Read required inputs:
    - `project/master_outline.md`
    - `project/story_dossier.md`
    - All files in `project/summaries/` (if any exist)
-5. Replace placeholders in prompt:
+6. Replace placeholders in prompt:
    - `{{ACT_NUMBER}}` → current act number
    - `{{ACT_NAME}}` → from state.json
    - `{{CHAPTERS_PER_ACT}}` → from config
@@ -150,8 +197,8 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
    - `{{STORY_DOSSIER}}` → full content
    - `{{COMPLETED_SUMMARIES}}` → concatenated summaries
    - `{{LAST_CHAPTER_NUMBER}}` → from state
-6. Spawn Task subagent with filled prompt
-7. Wait for result (act outline with chapter blocks)
+7. Spawn Task subagent with `subagent_type="story-architect"` and filled prompt
+8. Wait for result (act outline with chapter blocks)
 8. Save result to `project/outlines/act_N_outline.md`
 9. Update `state.json`:
    - Set `workflow_stage` to "reviewing_act_outline"
@@ -190,16 +237,17 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
 #### 4A: Generate Briefing Packet
 
 1. Read `state.json` to get current chapter number
-2. Read `config.json` for file paths
-3. Load prompt: `.book_machine/prompts/2_chapter_briefing_generation.md`
-4. Read inputs:
+2. Read `config.json` for file paths and agent configuration
+3. Check which agent to use: `agent_configuration["chapter_briefing_generation"]["agent"]` → **"general-purpose"**
+4. Load prompt: `.book_machine/prompts/2_chapter_briefing_generation.md`
+5. Read inputs:
    - Current act outline: `project/outlines/act_N_outline.md`
    - `project/story_dossier.md`
    - `project/writing_style.md`
    - `project/character_voice.md`
    - All summaries: `project/summaries/*.md`
    - Last 9 chapters: `project/chapters/chapter_*.md` (most recent 9)
-5. Replace placeholders:
+6. Replace placeholders:
    - `{{CHAPTER_NUMBER}}`
    - `{{ACT_OUTLINE}}`
    - `{{STORY_DOSSIER}}`
@@ -207,41 +255,43 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
    - `{{CHARACTER_VOICE}}`
    - `{{ALL_SUMMARIES}}`
    - `{{LAST_9_CHAPTERS}}`
-6. Spawn briefing subagent
-7. Receive briefing packet
-8. Save to `project/briefings/chapter_X_briefing.md`
-9. **Do NOT show to user** (config says auto-proceed)
+7. Spawn Task subagent with `subagent_type="general-purpose"` and filled prompt
+8. Receive briefing packet
+9. Save to `project/briefings/chapter_X_briefing.md`
+10. **Do NOT show to user** (config says auto-proceed)
 
 #### 4B: Write Chapter
 
-1. Load prompt: `.book_machine/prompts/3_chapter_writing.md`
-2. Read inputs:
+1. Check which agent to use: `agent_configuration["chapter_writing"]["agent"]` → **"fantasy-romance-editor"**
+2. Load prompt: `.book_machine/prompts/3_chapter_writing.md`
+3. Read inputs:
    - Generated briefing packet
    - All summaries
    - Last 9 chapters
-3. Replace placeholders:
+4. Replace placeholders:
    - `{{CHAPTER_NUMBER}}`
    - `{{CHAPTER_BRIEFING}}`
    - `{{ALL_SUMMARIES}}`
    - `{{LAST_9_CHAPTERS}}`
    - `{{POV_CHARACTER}}` (from act outline chapter block)
    - `{{MIN_WORDS}}`, `{{MAX_WORDS}}` (from config)
-4. Spawn writer subagent (this may take longer)
-5. Receive chapter text
-6. Save to `project/chapters/chapter_X.md`
+5. Spawn Task subagent with `subagent_type="fantasy-romance-editor"` and filled prompt (this may take longer)
+6. Receive chapter text
+7. Save to `project/chapters/chapter_X.md`
 
 #### 4C: Generate Summary
 
-1. Load prompt: `.book_machine/prompts/4_chapter_summary.md`
-2. Read inputs:
+1. Check which agent to use: `agent_configuration["chapter_summary"]["agent"]` → **"general-purpose"**
+2. Load prompt: `.book_machine/prompts/4_chapter_summary.md`
+3. Read inputs:
    - Just-written chapter text
-3. Replace placeholders:
+4. Replace placeholders:
    - `{{CHAPTER_NUMBER}}`
    - `{{CHAPTER_TEXT}}`
    - `{{POV_CHARACTER}}`
-4. Spawn summary subagent
-5. Receive summary
-6. Save to `project/summaries/chapter_X.md`
+5. Spawn Task subagent with `subagent_type="general-purpose"` and filled prompt
+6. Receive summary
+7. Save to `project/summaries/chapter_X.md`
 
 #### 4D: Present to User
 
@@ -282,8 +332,10 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
 
 **You do:**
 1. Read `state.json` to get current act and chapter
-2. Load prompt: `.book_machine/prompts/5_outline_adjustment_check.md`
-3. Read inputs:
+2. Read `config.json` to check agent configuration
+3. Check which agent to use: `agent_configuration["outline_adjustment_check"]["agent"]` → **"story-architect"**
+4. Load prompt: `.book_machine/prompts/5_outline_adjustment_check.md`
+5. Read inputs:
    - Just-approved chapter: `project/chapters/chapter_X.md`
    - Chapter summary: `project/summaries/chapter_X.md`
    - Current act outline: `project/outlines/act_N_outline.md`
@@ -291,7 +343,7 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
    - `project/master_outline.md`
    - `project/story_dossier.md`
    - All summaries
-4. Replace placeholders:
+6. Replace placeholders:
    - `{{CHAPTER_NUMBER}}`
    - `{{CHAPTER_TEXT}}`
    - `{{CHAPTER_SUMMARY}}`
@@ -300,8 +352,8 @@ Use the **Task tool** with appropriate prompts. Each subagent needs:
    - `{{MASTER_OUTLINE}}`
    - `{{STORY_DOSSIER}}`
    - `{{ALL_SUMMARIES}}`
-5. Spawn adjustment check subagent
-6. Receive analysis (either "NO CHANGES" or "ADJUSTMENTS REQUIRED")
+7. Spawn Task subagent with `subagent_type="story-architect"` and filled prompt
+8. Receive analysis (either "NO CHANGES" or "ADJUSTMENTS REQUIRED")
 
 #### If NO CHANGES:
 1. Show user the reasoning
