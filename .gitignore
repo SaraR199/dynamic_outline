@@ -1,0 +1,43 @@
+# Dynamic Outline Book Machine - Git Ignore
+
+# User's actual book content (keep private)
+project/master_outline.md
+project/story_dossier.md
+project/writing_style.md
+project/character_voice.md
+
+# Generated content (can be regenerated)
+project/outlines/*.md
+project/chapters/*.md
+project/summaries/*.md
+project/briefings/*.md
+
+# Workflow state (user-specific)
+.book_machine/state.json
+
+# Keep example files (for reference)
+!project/*.EXAMPLE.md
+
+# Keep directory structure
+!project/outlines/.gitkeep
+!project/chapters/.gitkeep
+!project/summaries/.gitkeep
+!project/briefings/.gitkeep
+
+# System files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Editor specific
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs
+*.log
+
+# Temp files
+tmp/
+temp/

@@ -1,0 +1,38 @@
+{
+  "book_structure": {
+    "total_acts": 4,
+    "chapters_per_act": 7,
+    "target_chapter_word_count_min": 1500,
+    "target_chapter_word_count_max": 2500,
+    "default_pov": "Third Person Limited",
+    "default_tense": "Past Tense"
+  },
+  "file_paths": {
+    "master_outline": "project/master_outline.md",
+    "story_dossier": "project/story_dossier.md",
+    "writing_style": "project/writing_style.md",
+    "character_voice": "project/character_voice.md",
+    "outlines_dir": "project/outlines",
+    "chapters_dir": "project/chapters",
+    "summaries_dir": "project/summaries",
+    "briefings_dir": "project/briefings"
+  },
+  "context_optimization": {
+    "include_last_n_full_chapters": 9,
+    "include_all_summaries": true,
+    "act_outline_only_current": true
+  },
+  "workflow_options": {
+    "auto_proceed_after_briefing": true,
+    "show_briefing_packets": false,
+    "save_briefing_packets": true,
+    "require_adjustment_review": true
+  },
+  "prompts": {
+    "act_outline_generation": ".book_machine/prompts/1_act_outline_generation.md",
+    "chapter_briefing_generation": ".book_machine/prompts/2_chapter_briefing_generation.md",
+    "chapter_writing": ".book_machine/prompts/3_chapter_writing.md",
+    "chapter_summary": ".book_machine/prompts/4_chapter_summary.md",
+    "outline_adjustment_check": ".book_machine/prompts/5_outline_adjustment_check.md"
+  }
+}
